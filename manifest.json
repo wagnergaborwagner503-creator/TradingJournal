@@ -1,0 +1,18 @@
+{
+  "name": "Trading Journal",
+  "short_name": "TJ",
+  "description": "Személyes trading napló – SPX500 & NAS100",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070b0f",
+  "theme_color": "#070b0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
