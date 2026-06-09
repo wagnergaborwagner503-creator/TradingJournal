@@ -4469,26 +4469,28 @@ function AccountEntriesSection({ trades, showToast }) {
           );
         })}
       </div>
-      {!showForm && !editing && (
-        <button className="btn-primary" onClick={()=>setShowForm(true)}>
-          + Új hozzáadása
-        </button>
-      )}
+      <button className="btn-primary" onClick={()=>setShowForm(true)}>
+        + Új hozzáadása
+      </button>
     </div>
 
-    {/* Add form */}
-    {showForm && !editing && (
-      <AccountEntryForm
-        onSave={onSave}
-        onCancel={()=>setShowForm(false)}/>
-    )}
-
-    {/* Edit form */}
-    {editing && (
-      <AccountEntryForm
-        initial={editing}
-        onSave={onSave}
-        onCancel={()=>setEditing(null)}/>
+    {/* Add / Edit modal */}
+    {(showForm || editing) && (
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500,
+        display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}
+        onClick={e=>{if(e.target===e.currentTarget){setShowForm(false);setEditing(null);}}}>
+        <div style={{background:'var(--surface)',borderRadius:16,border:'1px solid var(--border)',
+          width:'100%',maxWidth:680,maxHeight:'90vh',overflowY:'auto',position:'relative'}}>
+          <button onClick={()=>{setShowForm(false);setEditing(null);}}
+            style={{position:'absolute',top:14,right:14,zIndex:1,background:'var(--surface2)',
+              border:'none',borderRadius:7,width:32,height:32,cursor:'pointer',
+              color:'var(--text-2)',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+          <AccountEntryForm
+            initial={editing||null}
+            onSave={onSave}
+            onCancel={()=>{setShowForm(false);setEditing(null);}}/>
+        </div>
+      </div>
     )}
 
     {/* Active account cards – 2 per row */}
@@ -4507,15 +4509,13 @@ function AccountEntriesSection({ trades, showToast }) {
         )}
         <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14,marginBottom:inactiveAccounts.length?24:0}}>
           {activeAccounts.map(account=>(
-            editing?.id === account.id ? null : (
-              <AccountEntryCard
-                key={account.id}
-                account={account}
-                trades={trades}
-                onEdit={()=>{ setEditing(account); setShowForm(false); }}
-                onDelete={()=>onDelete(account.id)}
-                onPayoutSaved={()=>{ const list=loadAccounts(); save(list); }}/>
-            )
+            <AccountEntryCard
+              key={account.id}
+              account={account}
+              trades={trades}
+              onEdit={()=>{ setEditing(account); setShowForm(false); }}
+              onDelete={()=>onDelete(account.id)}
+              onPayoutSaved={()=>{ const list=loadAccounts(); save(list); }}/>
           ))}
         </div>
 
@@ -5149,48 +5149,66 @@ function BusinessTracker({ showToast }) {
         <div className="kpi"><div className="kpi-label">Havi előf. költ.</div><div className="kpi-value" style={{color:'var(--yellow)'}}>${n(monthlySubCost,2)}</div></div>
       </div>
 
-      {/* Transaction form */}
+      {/* Transaction modal */}
       {showForm && (
-        <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:12,padding:'20px 24px',marginBottom:16}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:14}}>{editId?'Tranzakció szerkesztése':'Új tranzakció'}</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-            <div className="form-group"><label>Dátum</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
-            <div className="form-group"><label>Kategória</label>
-              <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
-                {BIZ_CATS.map(c=><option key={c}>{c}</option>)}
-              </select>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500,
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}
+          onClick={e=>{if(e.target===e.currentTarget){setShowForm(false);setEditId(null);}}}>
+          <div style={{background:'var(--surface)',borderRadius:16,border:'1px solid var(--border)',
+            width:'100%',maxWidth:480,maxHeight:'90vh',overflowY:'auto',position:'relative',padding:'28px 24px'}}>
+            <button onClick={()=>{setShowForm(false);setEditId(null);}}
+              style={{position:'absolute',top:14,right:14,background:'var(--surface2)',
+                border:'none',borderRadius:7,width:32,height:32,cursor:'pointer',
+                color:'var(--text-2)',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:18}}>{editId?'✏ Tranzakció szerkesztése':'+ Új tranzakció'}</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+              <div className="form-group"><label>Dátum</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
+              <div className="form-group"><label>Kategória</label>
+                <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+                  {BIZ_CATS.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Összeg ($)</label><input type="number" step="0.01" min="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"/></div>
+              <div className="form-group"><label>Megjegyzés</label><input type="text" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="Opcionális..."/></div>
             </div>
-            <div className="form-group"><label>Összeg ($)</label><input type="number" step="0.01" min="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"/></div>
-            <div className="form-group"><label>Megjegyzés</label><input type="text" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="Opcionális..."/></div>
-          </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn-primary" onClick={saveEntry}>Mentés</button>
-            <button className="btn-secondary" onClick={()=>setShowForm(false)}>Mégse</button>
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn-primary" onClick={saveEntry}>Mentés</button>
+              <button className="btn-secondary" onClick={()=>{setShowForm(false);setEditId(null);}}>Mégse</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Subscription form */}
+      {/* Subscription modal */}
       {showSubForm && (
-        <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:12,padding:'20px 24px',marginBottom:16}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:14}}>{editSubId?'Előfizetés szerkesztése':'Új előfizetés'}</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-            <div className="form-group"><label>Neve</label><input type="text" value={subForm.name} onChange={e=>setSubForm(f=>({...f,name:e.target.value}))} placeholder="pl. Topstep, The Analyst..."/></div>
-            <div className="form-group"><label>Számlázási ciklus</label>
-              <select value={subForm.cycle} onChange={e=>setSubForm(f=>({...f,cycle:e.target.value}))}>
-                {SUB_CYCLES.map(c=><option key={c}>{c}</option>)}
-              </select>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500,
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}
+          onClick={e=>{if(e.target===e.currentTarget){setShowSubForm(false);setEditSubId(null);}}}>
+          <div style={{background:'var(--surface)',borderRadius:16,border:'1px solid var(--border)',
+            width:'100%',maxWidth:480,maxHeight:'90vh',overflowY:'auto',position:'relative',padding:'28px 24px'}}>
+            <button onClick={()=>{setShowSubForm(false);setEditSubId(null);}}
+              style={{position:'absolute',top:14,right:14,background:'var(--surface2)',
+                border:'none',borderRadius:7,width:32,height:32,cursor:'pointer',
+                color:'var(--text-2)',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:18}}>{editSubId?'✏ Előfizetés szerkesztése':'+ Új előfizetés'}</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+              <div className="form-group"><label>Neve</label><input type="text" value={subForm.name} onChange={e=>setSubForm(f=>({...f,name:e.target.value}))} placeholder="pl. Topstep, The Analyst..."/></div>
+              <div className="form-group"><label>Számlázási ciklus</label>
+                <select value={subForm.cycle} onChange={e=>setSubForm(f=>({...f,cycle:e.target.value}))}>
+                  {SUB_CYCLES.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Összeg ($)</label><input type="number" step="0.01" min="0" value={subForm.amount} onChange={e=>setSubForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"/></div>
+              <div className="form-group"><label>Megjegyzés</label><input type="text" value={subForm.note} onChange={e=>setSubForm(f=>({...f,note:e.target.value}))} placeholder="Mire való..."/></div>
             </div>
-            <div className="form-group"><label>Összeg ($)</label><input type="number" step="0.01" min="0" value={subForm.amount} onChange={e=>setSubForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"/></div>
-            <div className="form-group"><label>Megjegyzés</label><input type="text" value={subForm.note} onChange={e=>setSubForm(f=>({...f,note:e.target.value}))} placeholder="Mire való..."/></div>
-          </div>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <button className="btn-primary" onClick={saveSub}>Mentés</button>
-            <button className="btn-secondary" onClick={()=>setShowSubForm(false)}>Mégse</button>
-            <label style={{display:'flex',alignItems:'center',gap:6,marginLeft:8,fontSize:13,color:'var(--text-2)',cursor:'pointer'}}>
-              <input type="checkbox" checked={subForm.active} onChange={e=>setSubForm(f=>({...f,active:e.target.checked}))} style={{accentColor:'var(--accent)'}}/>
-              Aktív előfizetés
-            </label>
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              <button className="btn-primary" onClick={saveSub}>Mentés</button>
+              <button className="btn-secondary" onClick={()=>{setShowSubForm(false);setEditSubId(null);}}>Mégse</button>
+              <label style={{display:'flex',alignItems:'center',gap:6,marginLeft:8,fontSize:13,color:'var(--text-2)',cursor:'pointer'}}>
+                <input type="checkbox" checked={subForm.active} onChange={e=>setSubForm(f=>({...f,active:e.target.checked}))} style={{accentColor:'var(--accent)'}}/>
+                Aktív előfizetés
+              </label>
+            </div>
           </div>
         </div>
       )}
@@ -5397,18 +5415,30 @@ function Export({ trades, showToast }) {
   };
 
   const exportJSON = () => {
+    // Business entries: az összeg mindig pozitív, az income/expense a category-ból jön.
+    // Exportnál explicit sign-t adunk hozzá, hogy import után is helyes legyen a megjelenítés.
+    const rawBiz = loadBizEntries();
+    const businessEntries = rawBiz.map(e => {
+      const isInc = BIZ_CAT_TYPES[e.category] === 'income';
+      return {
+        ...e,
+        amount: Math.abs(parseFloat(e.amount) || 0), // mindig pozitív szám
+        _type: isInc ? 'income' : 'expense',          // segéd-mező az importhoz
+      };
+    });
     const payload = {
       trades,
-      strategy:  loadStrategy(),
-      account:   loadAccount(),
-      accounts:  loadAccounts(),
+      strategy:        loadStrategy(),
+      account:         loadAccount(),
+      accounts:        loadAccounts(),
+      businessEntries, // üzleti tracker adatok
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `tj_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    showToast('✓ JSON backup exportálva');
+    showToast('✓ JSON backup exportálva (trades + számlák + üzleti adatok)');
   };
 
   const importJSON = e => {
@@ -5421,9 +5451,11 @@ function Export({ trades, showToast }) {
         const importedStrategy = data.strategy || '';
         const importedAccount  = data.account  || null;
         const importedAccounts = Array.isArray(data.accounts) ? data.accounts : null;
+        const importedBiz      = Array.isArray(data.businessEntries) ? data.businessEntries : null;
         if (!Array.isArray(importedTrades)) throw new Error();
         const acctCount = importedAccounts ? importedAccounts.length : 0;
-        if (confirm(`${importedTrades.length} trade + ${acctCount} számla importálása. Folytatod?`)) {
+        const bizCount  = importedBiz ? importedBiz.length : 0;
+        if (confirm(`${importedTrades.length} trade + ${acctCount} számla + ${bizCount} üzleti bejegyzés importálása. Folytatod?`)) {
           // Trade-ek: merge (meglévők megmaradnak, újak hozzáadódnak)
           const exist = loadTrades();
           const ids = new Set(exist.map(t=>t.id));
@@ -5431,8 +5463,19 @@ function Export({ trades, showToast }) {
           saveTrades(merged);
           if (importedStrategy) saveStrategy(importedStrategy);
           if (importedAccount)  saveAccount(importedAccount);
-          // Számlák: replace (pontosan a backup állapota áll vissza)
+          // Számlák: replace
           if (importedAccounts) saveAccounts(importedAccounts);
+          // Üzleti adatok: replace, összeg mindig pozitív (a category határozza meg az előjelet)
+          if (importedBiz) {
+            const cleanBiz = importedBiz.map(e => ({
+              ...e,
+              amount: Math.abs(parseFloat(e.amount) || 0),
+              // _type segédmezőt eltávolítjuk – a category alapján lesz meghatározva
+            }));
+            // _type-ot töröljük (csak export-segéd volt)
+            cleanBiz.forEach(e => { delete e._type; });
+            saveBizEntries(cleanBiz);
+          }
           window.location.reload();
         }
       } catch { alert('Érvénytelen JSON fájl.'); }
@@ -6032,11 +6075,11 @@ function App() {
     {id:'seed33',date:'2025-05-26',category:'Activation fee',amount:49.00,note:'Topstep előfizetés'},
     {id:'seed34',date:'2025-05-08',category:'Activation fee',amount:49.00,note:'Topstep előfizetés'},
     {id:'seed35',date:'2025-04-23',category:'Activation fee',amount:49.00,note:'Topstep előfizetés'},
-    // === Apex Trader Funding – kifizetések (Fedezethiány = ellenőrizd!) ===
-    {id:'seed36',date:'2026-03-28',category:'Egyéb bevétel',amount:98.50,note:'Apex – Fedezethiány (ellenőrizd a kategóriát!)'},
-    {id:'seed37',date:'2026-03-27',category:'Egyéb bevétel',amount:98.50,note:'Apex – Fedezethiány (ellenőrizd a kategóriát!)'},
-    {id:'seed38',date:'2026-03-26',category:'Egyéb bevétel',amount:98.50,note:'Apex – Fedezethiány (ellenőrizd a kategóriát!)'},
-    {id:'seed39',date:'2026-03-25',category:'Egyéb bevétel',amount:98.50,note:'Apex – Fedezethiány (ellenőrizd a kategóriát!)'},
+    // === Apex Trader Funding – fedezethiány (kiadás) ===
+    {id:'seed36',date:'2026-03-28',category:'Egyéb kiadás',amount:98.50,note:'Apex – Fedezethiány'},
+    {id:'seed37',date:'2026-03-27',category:'Egyéb kiadás',amount:98.50,note:'Apex – Fedezethiány'},
+    {id:'seed38',date:'2026-03-26',category:'Egyéb kiadás',amount:98.50,note:'Apex – Fedezethiány'},
+    {id:'seed39',date:'2026-03-25',category:'Egyéb kiadás',amount:98.50,note:'Apex – Fedezethiány'},
     // === Apex Trader Funding – előfizetések ===
     {id:'seed40',date:'2026-03-11',category:'Activation fee',amount:29.55,note:'Apex Trader Funding'},
     {id:'seed41',date:'2026-03-06',category:'Activation fee',amount:29.70,note:'Apex Trader Funding'},
