@@ -6092,6 +6092,37 @@ function App() {
   localStorage.setItem('tj_business', JSON.stringify(seed));
 })();
 
+// ── BUSINESS DATA MIGRATION v1 ──────────────────────────────────────────────
+// Egyszer lefutó migráció: Apex Fedezethiány bejegyzések kategóriájának javítása
+// Egyéb bevétel → Egyéb kiadás (ezek kiadások, nem bevételek)
+(function() {
+  if (localStorage.getItem('tj_biz_fix_v1')) return; // már futott
+  try {
+    const raw = localStorage.getItem('tj_business');
+    if (raw) {
+      const entries = JSON.parse(raw);
+      let changed = false;
+      const fixed = entries.map(e => {
+        // Javítás: ha Egyéb bevételként van tárolva de Fedezethiány megjegyzéssel
+        if (e.category === 'Egyéb bevétel' &&
+            e.note && e.note.toLowerCase().includes('fedezethiány')) {
+          changed = true;
+          return { ...e, category: 'Egyéb kiadás',
+            note: e.note.replace(' (ellenőrizd a kategóriát!)', '').trim() };
+        }
+        return e;
+      });
+      if (changed) {
+        const v = JSON.stringify(fixed);
+        localStorage.setItem('tj_business', v);
+        queueSync('business', v); // Supabase-ben is frissül
+        console.log('[TJ] business migration v1: fixed', fixed.filter((e,i)=>entries[i]?.category!==e.category).length, 'entries');
+      }
+    }
+  } catch(e) { console.warn('[TJ] business migration error', e); }
+  localStorage.setItem('tj_biz_fix_v1', '1');
+})();
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 <script>
