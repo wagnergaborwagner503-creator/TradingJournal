@@ -564,10 +564,41 @@ function queueSync(key, jsonValue) {
 }
 async function pullFromCloud() {
   const sb = getSB(); if (!sb) return false;
-  const { data:{ session } } = await sb.auth.getSession();
+  let session;
+  try {
+    const { data } = await sb.auth.getSession();
+    session = data?.session;
+  } catch(e) { return false; }
   if (!session) return false;
   const { data, error } = await sb.from('tj_data').select('key,value').eq('user_id', session.user.id);
-  if (error || !data || !data.length) return false;
+  if (error) return false;
+  // Cloud üres, de lokálisan van adat → feltöltjük az összes kulcsot
+  if (!data || !data.length) {
+    const batch = {};
+    Object.entries(LS_KEY_MAP).forEach(([syncKey, lsKey]) => {
+      const val = localStorage.getItem(lsKey);
+      if (val) batch[syncKey] = val;
+    });
+    if (Object.keys(batch).length) {
+      console.log('[TJ] cloud üres – lokális adatok feltöltése...', Object.keys(batch));
+      try { await _pushBatch(batch); _setSyncState('ok'); console.log('[TJ] kezdeti feltöltés kész'); }
+      catch(e) { console.warn('[TJ] kezdeti feltöltés hiba', e); _setSyncState('error'); }
+    }
+    return false;
+  }
+  // Cloud-ban van adat – lokálisan hiányzó kulcsok feltöltése
+  const cloudKeys = new Set(data.map(r => r.key));
+  const missingBatch = {};
+  Object.entries(LS_KEY_MAP).forEach(([syncKey, lsKey]) => {
+    if (!cloudKeys.has(syncKey)) {
+      const val = localStorage.getItem(lsKey);
+      if (val) missingBatch[syncKey] = val;
+    }
+  });
+  if (Object.keys(missingBatch).length) {
+    console.log('[TJ] hiányzó cloud kulcsok feltöltése:', Object.keys(missingBatch));
+    try { await _pushBatch(missingBatch); } catch(e) {}
+  }
   let changed = false;
   data.forEach(({ key, value }) => {
     const lsKey = LS_KEY_MAP[key];
