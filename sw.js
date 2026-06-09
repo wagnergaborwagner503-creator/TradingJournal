@@ -1,5 +1,5 @@
-// Trading Journal – Service Worker v5
-const CACHE = 'tj-v5';
+// Trading Journal – Service Worker v6
+const CACHE = 'tj-v6';
 
 // Telepítéskor azonnal átveszi az irányítást — nem vár semmilyen pre-cache-re
 self.addEventListener('install', () => self.skipWaiting());
@@ -26,7 +26,8 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request).then(resp => {
         if (resp && resp.status === 200) {
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+          const cloned = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, cloned));
         }
         return resp;
       }).catch(() => caches.match(e.request))
@@ -40,7 +41,8 @@ self.addEventListener('fetch', e => {
       if (cached) return cached;
       return fetch(e.request).then(resp => {
         if (resp && resp.status === 200 && resp.type !== 'opaque') {
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+          const cloned = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, cloned));
         }
         return resp;
       }).catch(() => caches.match('./index.html'));
