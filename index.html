@@ -246,10 +246,10 @@
     .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .cal-nav-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
     .cal-monthly-total { font-family: var(--mono); font-size: 14px; font-weight: 600; }
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr) 110px; gap: 5px; }
-    .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr) 110px; gap: 5px; margin-bottom: 5px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
     .cal-day-header { text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3); padding: 8px 0; }
-    .cal-week-header { text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3); padding: 8px 0; }
+    .cal-week-inline { font-family: var(--mono); font-size: 11px; font-weight: 700; margin-top: 5px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); }
     .cal-day { min-height: 110px; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 9px; position: relative; background: var(--surface); cursor: default; transition: border-color 0.15s; }
     .cal-day:hover { border-color: var(--border2); }
     .cal-day.empty { background: transparent; border-color: transparent; }
@@ -355,15 +355,14 @@
       body, .main, .page { overflow-x: hidden !important; }
 
       /* Naptár - mobilon egyenlő cellák, csak PnL */
-      .cal-grid { grid-template-columns: repeat(7, minmax(0,1fr)) 40px; gap: 1px; }
-      .cal-grid-header { grid-template-columns: repeat(7, minmax(0,1fr)) 40px; gap: 1px; margin-bottom: 2px; }
+      .cal-grid { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 1px; }
+      .cal-grid-header { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 1px; margin-bottom: 2px; }
       .cal-day { min-height: 40px; height: 40px; padding: 2px 2px; font-size: 9px; overflow: hidden; }
       .cal-date { font-size: 9px !important; }
       .cal-pnl { font-size: 8px !important; margin-top: 1px; }
       .cal-meta { display: none !important; }
       .cal-day-acct-data { display: none !important; }
-      .cal-week-cell { font-size: 8px; min-width: 0; word-break: break-all; }
-      .cal-week-header { font-size: 8px; padding: 3px 0; }
+      .cal-week-inline { font-size: 7px !important; margin-top: 2px; padding-top: 1px; }
       .cal-day-header { font-size: 8px; padding: 3px 0; letter-spacing: 0; }
       .cal-nav-title { font-size: 16px; }
       .cal-nav { margin-bottom: 12px; }
@@ -2612,7 +2611,6 @@ function CalendarView({ trades }) {
 
       <div className="cal-grid-header">
         {dayHeaders.map(h=><div key={h} className="cal-day-header">{h}</div>)}
-        <div className="cal-week-header">Heti</div>
       </div>
 
       {weeks.map((wk, wi) => (
@@ -2624,6 +2622,8 @@ function CalendarView({ trades }) {
             const isWeekend = di>=5;
             const fadeStyle = !isCurrentMonth ? {opacity:0.28, pointerEvents:'none'} : {};
             const cls = ['cal-day', isCurrentMonth?(ds?.cls||''):'', isToday?'today':'', !ds&&isWeekend&&isCurrentMonth?'weekend':''].filter(Boolean).join(' ');
+            const isSunday = di===6;
+            const wPnL = weeklyPnL[wi];
             return (
               <div key={di} className={cls} style={fadeStyle}>
                 <div className="cal-date" style={!isCurrentMonth?{color:'var(--text-3)'}:{}}>{day}</div>
@@ -2658,14 +2658,14 @@ function CalendarView({ trades }) {
                     {ds.count>1 && <span style={{marginLeft:3, color:'var(--text-3)'}}>×{ds.count}</span>}
                   </div>
                 </>)}
+                {isSunday && isCurrentMonth && wPnL!==0 && (
+                  <div className={`cal-week-inline ${wPnL>=0?'c-green':'c-red'}`}>
+                    Σ {wPnL>=0?'+':''}{pnlFmt(wPnL)}
+                  </div>
+                )}
               </div>
             );
           })}
-          <div className="cal-week-cell">
-            <span className={weeklyPnL[wi]>=0?'c-green':'c-red'} style={{fontFamily:'var(--mono)',fontSize:12,fontWeight:600}}>
-              {weeklyPnL[wi]!==0?`$${pnlFmt(weeklyPnL[wi])}`:''}
-            </span>
-          </div>
         </div>
       ))}
 
