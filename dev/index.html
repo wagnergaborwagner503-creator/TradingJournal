@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Trading Journal">
   <meta name="theme-color" content="#070b0f">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="../manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23070b0f'/%3E%3Crect x='4' y='4' width='24' height='24' rx='5' fill='%230d1520' stroke='%2300d4aa' stroke-width='1.5'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='700' font-size='14' fill='%2300d4aa'%3ETJ%3C/text%3E%3C/svg%3E">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -351,10 +351,7 @@
       .stat-grid-3 { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
-      /* Vízszintes scroll tiltás – az egész oldalon */
       body, .main, .page { overflow-x: hidden !important; }
-
-      /* Naptár - mobilon egyenlő cellák, csak PnL */
       .cal-grid { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 1px; }
       .cal-grid-header { grid-template-columns: repeat(7, minmax(0,1fr)); gap: 1px; margin-bottom: 2px; }
       .cal-day { min-height: 40px; height: 40px; padding: 2px 2px; font-size: 9px; overflow: hidden; }
@@ -366,36 +363,25 @@
       .cal-day-header { font-size: 8px; padding: 3px 0; letter-spacing: 0; }
       .cal-nav-title { font-size: 16px; }
       .cal-nav { margin-bottom: 12px; }
-      /* Recap kártya - teljes szélesség mobilon */
       .dc-card { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
       .dc-empty { width: 100% !important; box-sizing: border-box; }
       .dc-stats-row { grid-template-columns: repeat(2, 1fr) !important; }
       .dc-pnl-value { font-size: 32px !important; }
-      /* Trade tábla - vízszintes scroll */
       .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      /* Filterek mobilon */
       .filter-bar { gap: 6px; }
       .filter-bar select, .filter-bar input[type="date"] { font-size: 11px; padding: 6px 8px; }
-      /* Szekciók mobilon */
       .page { padding: 12px 10px; }
-      /* Page header mobilon */
       .page-header { flex-wrap: wrap; gap: 8px; }
-      /* Kártyák mobilon */
       .stat-card, .dash-card { padding: 14px 14px; }
-      /* Export - egymas alatt */
       .export-grid { grid-template-columns: 1fr !important; }
-      /* Statisztikák - egymas alatt */
       .stat-grid { grid-template-columns: 1fr !important; }
       .stat-grid-3 { grid-template-columns: 1fr !important; }
       .stat-block { min-width: 0; overflow-x: auto; }
       .stat-table { font-size: 11px; }
       .chart-row { grid-template-columns: 1fr !important; }
-      /* Fiók & Stratégia - egymas alatt */
       .form-grid-2 { grid-template-columns: 1fr !important; }
       .acct-progress-grid { grid-template-columns: repeat(2,1fr) !important; }
-      /* Számla dobozok - egymas alatt */
       .acct-cards-grid { grid-template-columns: 1fr !important; }
-      /* Szimuláció - wrap */
       .sim-params-wrap { flex-direction: column !important; }
     }
 
@@ -464,6 +450,10 @@
   </style>
 </head>
 <body>
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#ff9100;color:#000;text-align:center;padding:6px 16px;font-size:12px;font-weight:700;letter-spacing:0.8px;font-family:monospace;">
+  ⚠ FEJLESZTŐI OLDAL – bejelentkezés nélkül, csak helyi adatok
+</div>
+<div style="height:30px"></div>
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
@@ -505,7 +495,7 @@ const HU_MONTHS = ['Január','Február','Március','Április','Május','Június'
 
 // ── SUPABASE CLOUD SYNC ───────────────────────────────────────────────────────
 // ⚙️  Másold ide a saját Supabase adataidat (supabase.com → Project Settings → API):
-const SB_KEY = 'sb_publishable_L9ILTB7jAoacgvjAKJkK9g_XAalc7I0';
+const SB_KEY = ''; // DEV MODE — no auth, localStorage only
 
 let _sb = null;
 let _syncState = 'ok';
@@ -1144,9 +1134,7 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
       </div>
       {/* Date range filter */}
       <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 14px',marginBottom:16}}>
-        {/* Sor 1: Időszak label */}
         <div style={{fontSize:11,fontWeight:700,color:'var(--text-3)',textTransform:'uppercase',letterSpacing:'0.7px',marginBottom:8}}>Időszak</div>
-        {/* Sor 2: Sablon gombok – sortöréssel */}
         <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
           {[
             {label:'7 nap',   days:7},  {label:'14 nap', days:14},
@@ -1165,7 +1153,6 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
             );
           })}
         </div>
-        {/* Sor 3: Egyedi intervallum + X gomb */}
         <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:8}}>
           <input type="date" value={dashFrom} onChange={e=>{setDashFrom(e.target.value);}}
             style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:6,
@@ -1178,7 +1165,6 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
             style={{padding:'4px 8px',borderRadius:6,border:'1px solid var(--border)',
               background:'transparent',color:'var(--text-3)',cursor:'pointer',fontSize:11,flexShrink:0}}>✕</button>}
         </div>
-        {/* Sor 4: Statisztikák gomb */}
         {onGoToStats && (
           <div>
             <button onClick={()=>onGoToStats(dashFrom,dashTo)}
@@ -3131,7 +3117,7 @@ function MonteCarloSim({ trades }) {
   const [mWR,       setMWR]       = useState('55');
   const [mRR,       setMRR]       = useState('1.5');
   const [mRisk,     setMRisk]     = useState('100');
-  const [riskMode,  setRiskMode]  = useState('fixed'); // 'fixed'=$ fix, 'percent'=% tőkéből, 'qty'=quantity
+  const [riskMode,  setRiskMode]  = useState('fixed');
   // Shared
   const [tpw,       setTpw]       = useState('5');
   const [horizon,   setHorizon]   = useState('52');
@@ -3186,10 +3172,9 @@ function MonteCarloSim({ trades }) {
         let eq=cap, peak=cap, maxDD=0, ruined=false;
         const path=[cap];
         for (let i=0;i<totalN;i++){
-          // Kockázat kiszámítása a kiválasztott mód szerint
           const risk = riskMode==='percent'
             ? Math.max(0.01, eq * riskVal / 100)
-            : riskVal; // 'fixed' és 'qty' esetén fix összeg
+            : riskVal;
           const tr = mode==='historical'
             ? histPnLs[Math.floor(Math.random()*histPnLs.length)]
             : (Math.random()<wr ? risk*rr : -risk);
@@ -4598,13 +4583,15 @@ function AccountEntriesSection({ trades, showToast }) {
         )}
         <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14,marginBottom:inactiveAccounts.length?24:0}}>
           {activeAccounts.map(account=>(
-            <AccountEntryCard
-              key={account.id}
-              account={account}
-              trades={trades}
-              onEdit={()=>{ setEditing(account); setShowForm(false); }}
-              onDelete={()=>onDelete(account.id)}
-              onPayoutSaved={()=>{ const list=loadAccounts(); save(list); }}/>
+            editing?.id === account.id ? null : (
+              <AccountEntryCard
+                key={account.id}
+                account={account}
+                trades={trades}
+                onEdit={()=>{ setEditing(account); setShowForm(false); }}
+                onDelete={()=>onDelete(account.id)}
+                onPayoutSaved={()=>{ const list=loadAccounts(); save(list); }}/>
+            )
           ))}
         </div>
 
@@ -4912,7 +4899,7 @@ function ResetSection({ showToast }) {
     localStorage.removeItem('tj_inst');
     localStorage.removeItem('tj_business');
     localStorage.removeItem('tj_subscriptions');
-    localStorage.setItem('tj_noseed', '1'); // megakadályozza az üzleti adat újraseedingét
+    localStorage.setItem('tj_noseed', '1');
     try { await deleteCloudData(); } catch(e) { console.warn('[TJ] deleteCloudData error', e); }
     showToast('✓ Minden adat törölve (helyi + felhő) – oldal újratöltés...');
     setTimeout(() => window.location.reload(), 1500);
@@ -5504,15 +5491,13 @@ function Export({ trades, showToast }) {
   };
 
   const exportJSON = () => {
-    // Business entries: az összeg mindig pozitív, az income/expense a category-ból jön.
-    // Exportnál explicit sign-t adunk hozzá, hogy import után is helyes legyen a megjelenítés.
     const rawBiz = loadBizEntries();
     const businessEntries = rawBiz.map(e => {
       const isInc = BIZ_CAT_TYPES[e.category] === 'income';
       return {
         ...e,
-        amount: Math.abs(parseFloat(e.amount) || 0), // mindig pozitív szám
-        _type: isInc ? 'income' : 'expense',          // segéd-mező az importhoz
+        amount: Math.abs(parseFloat(e.amount) || 0),
+        _type: isInc ? 'income' : 'expense',
       };
     });
     const payload = {
@@ -5520,7 +5505,7 @@ function Export({ trades, showToast }) {
       strategy:        loadStrategy(),
       account:         loadAccount(),
       accounts:        loadAccounts(),
-      businessEntries, // üzleti tracker adatok
+      businessEntries,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
@@ -5545,23 +5530,15 @@ function Export({ trades, showToast }) {
         const acctCount = importedAccounts ? importedAccounts.length : 0;
         const bizCount  = importedBiz ? importedBiz.length : 0;
         if (confirm(`${importedTrades.length} trade + ${acctCount} számla + ${bizCount} üzleti bejegyzés importálása. Folytatod?`)) {
-          // Trade-ek: merge (meglévők megmaradnak, újak hozzáadódnak)
           const exist = loadTrades();
           const ids = new Set(exist.map(t=>t.id));
           const merged = [...exist, ...importedTrades.filter(t=>!ids.has(t.id))];
           saveTrades(merged);
           if (importedStrategy) saveStrategy(importedStrategy);
           if (importedAccount)  saveAccount(importedAccount);
-          // Számlák: replace
           if (importedAccounts) saveAccounts(importedAccounts);
-          // Üzleti adatok: replace, összeg mindig pozitív (a category határozza meg az előjelet)
           if (importedBiz) {
-            const cleanBiz = importedBiz.map(e => ({
-              ...e,
-              amount: Math.abs(parseFloat(e.amount) || 0),
-              // _type segédmezőt eltávolítjuk – a category alapján lesz meghatározva
-            }));
-            // _type-ot töröljük (csak export-segéd volt)
+            const cleanBiz = importedBiz.map(e => ({ ...e, amount: Math.abs(parseFloat(e.amount) || 0) }));
             cleanBiz.forEach(e => { delete e._type; });
             saveBizEntries(cleanBiz);
           }
@@ -5853,7 +5830,6 @@ function App() {
         const { data: { session } } = await sb.auth.getSession();
         if (cancelled) return;
         if (session) {
-          // Van helyi session → validáljuk a szerveren (törölt usert detektál)
           const { data: { user: liveUser }, error: uErr } = await sb.auth.getUser();
           if (cancelled) return;
           if (!uErr && liveUser) {
@@ -5863,13 +5839,11 @@ function App() {
               if (changed && !cancelled) { window.location.reload(); return; }
             } catch(e) { console.warn('[TJ] pullFromCloud error', e); }
           } else {
-            // Törölt / érvénytelen fiók — auth tokenek törlése
             Object.keys(localStorage)
               .filter(k => k.includes('supabase') || k.includes('sb-') || k === 'tj_sb_session')
               .forEach(k => localStorage.removeItem(k));
           }
         }
-        // Nincs session → login képernyő (setAuthChecked(true) lent fut)
       } catch(e) {
         console.warn('[TJ] auth error', e);
       }
@@ -5971,7 +5945,7 @@ function App() {
     <SetPasswordScreen onDone={() => { setRecoveryMode(false); }}/>
   );
   if (isSBConfigured() && !user) return (
-    <AuthScreen onLogin={() => { window.location.reload(); }}/>
+    <AuthScreen onLogin={u => { setUser(u); setAuthChecked(true); }}/>
   );
 
   const allNavItems = [
@@ -6182,17 +6156,14 @@ function App() {
 })();
 
 // ── BUSINESS DATA MIGRATION v1 ──────────────────────────────────────────────
-// Egyszer lefutó migráció: Apex Fedezethiány bejegyzések kategóriájának javítása
-// Egyéb bevétel → Egyéb kiadás (ezek kiadások, nem bevételek)
 (function() {
-  if (localStorage.getItem('tj_biz_fix_v1')) return; // már futott
+  if (localStorage.getItem('tj_biz_fix_v1')) return;
   try {
     const raw = localStorage.getItem('tj_business');
     if (raw) {
       const entries = JSON.parse(raw);
       let changed = false;
       const fixed = entries.map(e => {
-        // Javítás: ha Egyéb bevételként van tárolva de Fedezethiány megjegyzéssel
         if (e.category === 'Egyéb bevétel' &&
             e.note && e.note.toLowerCase().includes('fedezethiány')) {
           changed = true;
@@ -6204,11 +6175,10 @@ function App() {
       if (changed) {
         const v = JSON.stringify(fixed);
         localStorage.setItem('tj_business', v);
-        queueSync('business', v); // Supabase-ben is frissül
-        console.log('[TJ] business migration v1: fixed', fixed.filter((e,i)=>entries[i]?.category!==e.category).length, 'entries');
+        queueSync('business', v);
       }
     }
-  } catch(e) { console.warn('[TJ] business migration error', e); }
+  } catch(e) {}
   localStorage.setItem('tj_biz_fix_v1', '1');
 })();
 
