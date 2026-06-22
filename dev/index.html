@@ -736,10 +736,11 @@ function calcStats(trades, startingCapital = 0) {
   const profitFactor= grossLoss>0 ? grossProfit/grossLoss : grossProfit>0 ? Infinity : 0;
   const avgWin  = cleanWins.length>0 ? grossProfit/cleanWins.length : 0;
   const avgLoss = cleanLosses.length>0 ? grossLoss/cleanLosses.length : 0;
-  // Actual RR: csak clean Win trade-ek (BE = 0R, Loss = -1R → nem torzítja a stratégia átlagos RR-jét)
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R (terv kockázat), BE = 0R
   const cleanBes = clean.filter(t => t.result==='BE');
-  const rrVals  = cleanWins.filter(t=>t.actualRR && parseFloat(t.actualRR)>0).map(t=>parseFloat(t.actualRR));
-  const avgRR   = rrVals.length>0 ? rrVals.reduce((s,v)=>s+v,0)/rrVals.length : 0;
+  const rrWinSum = cleanWins.reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
+  const rrDenom  = cleanWins.length + cleanLosses.length + cleanBes.length;
+  const avgRR    = rrDenom>0 ? (rrWinSum - cleanLosses.length) / rrDenom : 0;
   // Expectancy per trade including BE (BE contributes $0, so expectancy = pWin*avgWin - pLoss*avgLoss)
   const cleanTotal = cleanDecisive + cleanBes.length;
   const pWin  = cleanTotal > 0 ? cleanWins.length / cleanTotal : 0;
@@ -2047,8 +2048,13 @@ function DayCardContent({ trades, date, cardRef }) {
   const wins       = dayTrades.filter(t=>t.result==='Win').length;
   const losses     = dayTrades.filter(t=>t.result==='Loss').length;
   const bes        = dayTrades.filter(t=>t.result==='BE').length;
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
   const avgRR      = dayTrades.length>0
-    ? (dayTrades.reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0)/dayTrades.length).toFixed(2) : null;
+    ? (dayTrades.reduce((s,t)=>{
+        if(t.result==='Win')  return s+(parseFloat(t.actualRR)||0);
+        if(t.result==='Loss') return s-1;
+        return s;
+      },0)/dayTrades.length).toFixed(2) : null;
   const instruments = [...new Set(dayTrades.map(t=>t.instrument))];
   const directions  = [...new Set(dayTrades.map(t=>t.direction))];
   const setupClasses= [...new Set(dayTrades.map(t=>t.setupClass).filter(Boolean))];
@@ -2208,8 +2214,10 @@ function RangeCardContent({ trades, from, to, cardRef, selectedAcctIds=[] }) {
   const bes       = rangeTrades.filter(t=>t.result==='BE').length;
   const decisive  = wins + losses;
   const winRate   = decisive>0 ? Math.round(wins/decisive*100) : 0;
-  const rrVals    = rangeTrades.filter(t=>t.actualRR).map(t=>parseFloat(t.actualRR));
-  const avgRR     = rrVals.length>0 ? (rrVals.reduce((s,v)=>s+v,0)/rrVals.length) : null;
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
+  const rrDenom2  = wins + losses + bes;
+  const rrWinSum2 = rangeTrades.filter(t=>t.result==='Win').reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
+  const avgRR     = rrDenom2>0 ? (rrWinSum2 - losses) / rrDenom2 : null;
   const planVals  = rangeTrades.filter(t=>t.plannedRR).map(t=>parseFloat(t.plannedRR));
   const avgPlanRR = planVals.length>0 ? (planVals.reduce((s,v)=>s+v,0)/planVals.length) : null;
   // Per-account breakdown for recap card
@@ -2478,8 +2486,11 @@ function CalendarView({ trades }) {
     const allBE  = realTrades.length>0 && realTrades.every(t=>t.result==='BE');
     const bias= dayTrades[0]?.bias || 3;
     const dirs= [...new Set(realTrades.map(t=>t.direction))];
-    const rrVals=realTrades.filter(t=>t.actualRR&&t.result!=='BE').map(t=>parseFloat(t.actualRR));
-    const avgRR = rrVals.length>0 ? rrVals.reduce((s,v)=>s+v,0)/rrVals.length : null;
+    // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
+    const bes2 = realTrades.filter(t=>t.result==='BE').length;
+    const rrDenom3 = wins + losses + bes2;
+    const rrWinSum3 = realTrades.filter(t=>t.result==='Win').reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
+    const avgRR = rrDenom3>0 ? (rrWinSum3 - losses) / rrDenom3 : null;
     const safety= realTrades.some(t=>t.safetyProtocol?.enabled);
     const acctData = {};
     allAccounts.forEach(acct => {
@@ -4581,7 +4592,7 @@ function AccountEntriesSection({ trades, showToast }) {
              filter==='funded' ? 'Nincs aktív funded számla.' : 'Nincs aktív live számla.'}
           </div>
         )}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14,marginBottom:inactiveAccounts.length?24:0}}>
+        <div className="acct-cards-grid" style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:14,marginBottom:inactiveAccounts.length?24:0}}>
           {activeAccounts.map(account=>(
             editing?.id === account.id ? null : (
               <AccountEntryCard
@@ -4602,7 +4613,8 @@ function AccountEntriesSection({ trades, showToast }) {
               color:'var(--text-3)',marginBottom:10}}>
               Inaktív számlák ({inactiveAccounts.length})
             </div>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+            <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,minWidth:480}}>
               <thead>
                 <tr style={{borderBottom:'1px solid var(--border)'}}>
                   <th style={{textAlign:'left',padding:'6px 10px',color:'var(--text-3)',fontWeight:600,fontSize:11}}>Számla</th>
@@ -4651,6 +4663,7 @@ function AccountEntriesSection({ trades, showToast }) {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </>);
