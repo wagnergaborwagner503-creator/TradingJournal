@@ -746,11 +746,12 @@ function calcStats(trades, startingCapital = 0) {
   const profitFactor= grossLoss>0 ? grossProfit/grossLoss : grossProfit>0 ? Infinity : 0;
   const avgWin  = cleanWins.length>0 ? grossProfit/cleanWins.length : 0;
   const avgLoss = cleanLosses.length>0 ? grossLoss/cleanLosses.length : 0;
-  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R (terv kockázat), BE = 0R
-  const cleanBes = clean.filter(t => t.result==='BE');
-  const rrWinSum = cleanWins.reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
-  const rrDenom  = cleanWins.length + cleanLosses.length + cleanBes.length;
-  const avgRR    = rrDenom>0 ? (rrWinSum - cleanLosses.length) / rrDenom : 0;
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = tervezett R:R (plan R), BE = 0R
+  const cleanBes  = clean.filter(t => t.result==='BE');
+  const rrWinSum  = cleanWins.reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
+  const rrLossSum = cleanLosses.reduce((s,t)=>s+(parseFloat(t.plannedRR)||0),0);
+  const rrDenom   = cleanWins.length + cleanLosses.length + cleanBes.length;
+  const avgRR     = rrDenom>0 ? (rrWinSum + rrLossSum) / rrDenom : 0;
   // Expectancy per trade including BE (BE contributes $0, so expectancy = pWin*avgWin - pLoss*avgLoss)
   const cleanTotal = cleanDecisive + cleanBes.length;
   const pWin  = cleanTotal > 0 ? cleanWins.length / cleanTotal : 0;
@@ -2062,11 +2063,11 @@ function DayCardContent({ trades, date, cardRef }) {
   const wins       = dayTrades.filter(t=>t.result==='Win').length;
   const losses     = dayTrades.filter(t=>t.result==='Loss').length;
   const bes        = dayTrades.filter(t=>t.result==='BE').length;
-  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = tervezett R:R (plan R), BE = 0R
   const avgRR      = dayTrades.length>0
     ? (dayTrades.reduce((s,t)=>{
         if(t.result==='Win')  return s+(parseFloat(t.actualRR)||0);
-        if(t.result==='Loss') return s-1;
+        if(t.result==='Loss') return s+(parseFloat(t.plannedRR)||0);
         return s;
       },0)/dayTrades.length).toFixed(2) : null;
   const instruments = [...new Set(dayTrades.map(t=>t.instrument))];
@@ -2228,10 +2229,11 @@ function RangeCardContent({ trades, from, to, cardRef, selectedAcctIds=[] }) {
   const bes       = rangeTrades.filter(t=>t.result==='BE').length;
   const decisive  = wins + losses;
   const winRate   = decisive>0 ? Math.round(wins/decisive*100) : 0;
-  // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
-  const rrDenom2  = wins + losses + bes;
-  const rrWinSum2 = rangeTrades.filter(t=>t.result==='Win').reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
-  const avgRR     = rrDenom2>0 ? (rrWinSum2 - losses) / rrDenom2 : null;
+  // Átlag R:R: nyertes = tényleges R:R, vesztes = tervezett R:R (plan R), BE = 0R
+  const rrDenom2   = wins + losses + bes;
+  const rrWinSum2  = rangeTrades.filter(t=>t.result==='Win').reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
+  const rrLossSum2 = rangeTrades.filter(t=>t.result==='Loss').reduce((s,t)=>s+(parseFloat(t.plannedRR)||0),0);
+  const avgRR      = rrDenom2>0 ? (rrWinSum2 + rrLossSum2) / rrDenom2 : null;
   const planVals  = rangeTrades.filter(t=>t.plannedRR).map(t=>parseFloat(t.plannedRR));
   const avgPlanRR = planVals.length>0 ? (planVals.reduce((s,v)=>s+v,0)/planVals.length) : null;
   // Per-account breakdown for recap card
@@ -2500,11 +2502,12 @@ function CalendarView({ trades }) {
     const allBE  = realTrades.length>0 && realTrades.every(t=>t.result==='BE');
     const bias= dayTrades[0]?.bias || 3;
     const dirs= [...new Set(realTrades.map(t=>t.direction))];
-    // Átlag R:R: nyertes = tényleges R:R, vesztes = -1R, BE = 0R
+    // Átlag R:R: nyertes = tényleges R:R, vesztes = tervezett R:R (plan R), BE = 0R
     const bes2 = realTrades.filter(t=>t.result==='BE').length;
     const rrDenom3 = wins + losses + bes2;
     const rrWinSum3 = realTrades.filter(t=>t.result==='Win').reduce((s,t)=>s+(parseFloat(t.actualRR)||0),0);
-    const avgRR = rrDenom3>0 ? (rrWinSum3 - losses) / rrDenom3 : null;
+    const rrLossSum3 = realTrades.filter(t=>t.result==='Loss').reduce((s,t)=>s+(parseFloat(t.plannedRR)||0),0);
+    const avgRR = rrDenom3>0 ? (rrWinSum3 + rrLossSum3) / rrDenom3 : null;
     const safety= realTrades.some(t=>t.safetyProtocol?.enabled);
     const acctData = {};
     allAccounts.forEach(acct => {
