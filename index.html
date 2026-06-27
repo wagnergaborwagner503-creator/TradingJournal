@@ -68,6 +68,21 @@
     .kpi-value { font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; }
     .kpi-sub { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-top: 6px; }
 
+    /* Dashboard Tradezella-style widgets */
+    .dash-widgets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .dash-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; min-height: 120px; }
+    .dw-head { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
+    .dw-badge { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text-3); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+    .dw-bignum { font-family: var(--mono); font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; margin-top: auto; }
+    .dw-body { display: flex; align-items: center; gap: 14px; margin-top: auto; }
+    .dw-chart { position: relative; width: 92px; height: 92px; flex-shrink: 0; }
+    .dw-chart-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .dw-chart-val { font-family: var(--mono); font-size: 19px; font-weight: 700; line-height: 1; }
+    .dw-legend { display: flex; flex-direction: column; gap: 4px; font-family: var(--mono); font-size: 11px; }
+    .dw-legend span.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+    .dash-zella { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 22px; margin-bottom: 16px; }
+    .dash-zella-grid { display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: center; }
+
     /* Charts */
     .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 16px; }
     .chart-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 16px; }
@@ -396,6 +411,12 @@
       /* Számla dobozok - egymas alatt, mindig a kepernyobe ferve */
       .acct-cards-grid { grid-template-columns: 1fr !important; }
       .acct-cards-grid > * { min-width: 0 !important; max-width: 100% !important; }
+      /* Számla statisztika csempék - 2 oszlop, ne logjon ki */
+      .acct-stat-tiles { grid-template-columns: repeat(2,1fr) !important; }
+      .acct-stat-tiles > * { min-width: 0 !important; }
+      /* Dashboard widgetek - telefonon 1 oszlop */
+      .dash-widgets { grid-template-columns: 1fr !important; }
+      .dash-zella-grid { grid-template-columns: 1fr !important; }
       /* Szimuláció - wrap */
       .sim-params-wrap { flex-direction: column !important; }
     }
@@ -1093,6 +1114,173 @@ function DayChart({ data }) {
   return <div className="chart-wrap" style={{height:190}}><canvas ref={ref}/></div>;
 }
 
+// ── DASHBOARD WIDGETS (Tradezella-style) ─────────────────────────────────────
+const _clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+// Zella Score – 6 normalizált metrika (0-100) súlyozott átlaga.
+// A pontos TradeZella súlyok nem publikusak; ez egy ésszerű közelítés.
+function computeZella(s, dailyPnls) {
+  if (!s) return null;
+  const winScore = _clamp(s.cleanWinRate/60*100, 0, 100);           // 60% win = 100
+  const pfVal    = s.profitFactor===Infinity ? 3 : (s.profitFactor||0);
+  const pfScore  = _clamp(pfVal/3*100, 0, 100);                      // PF 3 = 100
+  const ratio    = s.avgLoss>0 ? s.avgWin/s.avgLoss : (s.avgWin>0?3:0);
+  const rrScore  = _clamp(ratio/3*100, 0, 100);                      // 3:1 = 100
+  const ddScore  = _clamp(100 - s.maxDDpct*4, 0, 100);              // 0% DD = 100, 25% = 0
+  const rf       = s.maxDD>0 ? s.totalPnL/s.maxDD : (s.totalPnL>0?5:0);
+  const rfScore  = _clamp(rf/5*100, 0, 100);                        // recovery 5 = 100
+  const posDays  = dailyPnls.filter(v=>v>0);
+  const sumPos   = posDays.reduce((a,b)=>a+b,0);
+  let consScore  = 0;
+  if (posDays.length>1 && sumPos>0) {
+    const maxDay = Math.max(...posDays);
+    consScore = _clamp((1 - maxDay/sumPos) / (1 - 1/posDays.length) * 100, 0, 100);
+  } else if (posDays.length===1) consScore = 50;
+  const axes = [
+    { label:'Win %',          value:winScore },
+    { label:'Profit factor',  value:pfScore  },
+    { label:'Avg win/loss',   value:rrScore  },
+    { label:'Recovery factor',value:rfScore  },
+    { label:'Max drawdown',   value:ddScore  },
+    { label:'Consistency',    value:consScore},
+  ];
+  const w = [0.15, 0.20, 0.20, 0.15, 0.15, 0.15];
+  const score = axes.reduce((sum,a,i)=>sum+a.value*w[i], 0);
+  return { score, axes };
+}
+
+// Profit Factor – fél-gyűrű (doughnut) zöld nyereség / piros veszteség aránnyal
+function ProfitFactorDonut({ grossProfit, grossLoss, pf }) {
+  const ref = useRef(null); const chart = useRef(null);
+  useEffect(()=>{
+    if (!ref.current) return;
+    if (chart.current) chart.current.destroy();
+    const gp = grossProfit||0, gl = grossLoss||0;
+    chart.current = new Chart(ref.current.getContext('2d'), {
+      type:'doughnut',
+      data:{ datasets:[{ data:(gp+gl)>0?[gp,gl]:[1,1],
+        backgroundColor:['rgba(0,230,118,0.85)','rgba(255,61,113,0.8)'],
+        borderWidth:0, circumference:360 }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false, cutout:'72%',
+        plugins:{ legend:{display:false}, tooltip:{enabled:false} } }
+    });
+    return ()=>{ if(chart.current) chart.current.destroy(); };
+  }, [grossProfit, grossLoss]);
+  const pfTxt = pf===Infinity ? '∞' : n(pf||0,2);
+  return (
+    <div className="dw-body">
+      <div className="dw-chart">
+        <canvas ref={ref}/>
+        <div className="dw-chart-center"><span className="dw-chart-val" style={{color:'var(--text)'}}>{pfTxt}</span></div>
+      </div>
+      <div className="dw-legend">
+        <span><span className="dot" style={{background:'rgba(0,230,118,0.85)'}}/><span style={{color:'var(--green)'}}>${n(grossProfit||0,0)}</span></span>
+        <span><span className="dot" style={{background:'rgba(255,61,113,0.8)'}}/><span style={{color:'var(--red)'}}>-${n(grossLoss||0,0)}</span></span>
+      </div>
+    </div>
+  );
+}
+
+// Trade win % – fél-kör mérő W / BE / L szegmensekkel
+function WinRateGauge({ wins, losses, bes, winRate }) {
+  const ref = useRef(null); const chart = useRef(null);
+  useEffect(()=>{
+    if (!ref.current) return;
+    if (chart.current) chart.current.destroy();
+    const tot = wins+losses+bes;
+    chart.current = new Chart(ref.current.getContext('2d'), {
+      type:'doughnut',
+      data:{ datasets:[{ data:tot>0?[wins,bes,losses]:[1,0,1],
+        backgroundColor:['rgba(0,230,118,0.85)','rgba(255,145,0,0.85)','rgba(255,61,113,0.8)'],
+        borderWidth:0, circumference:180, rotation:270 }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false, cutout:'68%',
+        plugins:{ legend:{display:false}, tooltip:{enabled:false} } }
+    });
+    return ()=>{ if(chart.current) chart.current.destroy(); };
+  }, [wins, losses, bes]);
+  return (
+    <div className="dw-body">
+      <div className="dw-chart" style={{height:64,alignSelf:'center'}}>
+        <canvas ref={ref}/>
+        <div className="dw-chart-center" style={{justifyContent:'flex-end',paddingBottom:2}}>
+          <span className="dw-chart-val" style={{color:winRate>=50?'var(--green)':'var(--red)'}}>{(winRate||0).toFixed(1)}%</span>
+        </div>
+      </div>
+      <div className="dw-legend">
+        <span><span className="dot" style={{background:'rgba(0,230,118,0.85)'}}/>{wins} W</span>
+        <span><span className="dot" style={{background:'rgba(255,145,0,0.85)'}}/>{bes} BE</span>
+        <span><span className="dot" style={{background:'rgba(255,61,113,0.8)'}}/>{losses} L</span>
+      </div>
+    </div>
+  );
+}
+
+// Avg win / loss – arány + vízszintes sáv
+function WinLossBar({ avgWin, avgLoss }) {
+  const aw = avgWin||0, al = avgLoss||0;
+  const ratio = al>0 ? aw/al : (aw>0?aw:0);
+  const tot = aw+al;
+  const wPct = tot>0 ? aw/tot*100 : 50;
+  return (
+    <div style={{marginTop:'auto'}}>
+      <div className="dw-bignum" style={{fontSize:24,marginBottom:10,color:'var(--text)'}}>{ratio?n(ratio,2):'–'}</div>
+      <div style={{display:'flex',height:10,borderRadius:5,overflow:'hidden',background:'var(--surface2)'}}>
+        <div style={{width:`${wPct}%`,background:'rgba(0,230,118,0.85)'}}/>
+        <div style={{width:`${100-wPct}%`,background:'rgba(255,61,113,0.8)'}}/>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--mono)',fontSize:11,marginTop:5}}>
+        <span style={{color:'var(--green)'}}>${n(aw,0)}</span>
+        <span style={{color:'var(--red)'}}>-${n(al,0)}</span>
+      </div>
+    </div>
+  );
+}
+
+// Zella Score – pókháló (radar) + pontszám
+function ZellaRadar({ axes, score }) {
+  const ref = useRef(null); const chart = useRef(null);
+  useEffect(()=>{
+    if (!ref.current || !axes) return;
+    if (chart.current) chart.current.destroy();
+    chart.current = new Chart(ref.current.getContext('2d'), {
+      type:'radar',
+      data:{ labels:axes.map(a=>a.label),
+        datasets:[{ data:axes.map(a=>Math.round(a.value)),
+          backgroundColor:'rgba(124,108,246,0.25)', borderColor:'rgba(124,108,246,0.9)',
+          borderWidth:2, pointBackgroundColor:'rgba(124,108,246,1)', pointRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1520',borderColor:'#1a2535',borderWidth:1,bodyColor:'#dce8f5',callbacks:{label:c=>` ${c.raw}/100`}} },
+        scales:{ r:{ min:0, max:100, beginAtZero:true,
+          grid:{color:'rgba(255,255,255,0.08)'}, angleLines:{color:'rgba(255,255,255,0.08)'},
+          pointLabels:{color:'#9fb3c8',font:{size:10,family:"'IBM Plex Mono'"}},
+          ticks:{display:false,stepSize:25} } } }
+    });
+    return ()=>{ if(chart.current) chart.current.destroy(); };
+  }, [axes]);
+  const sc = Math.round(score||0);
+  const scColor = sc>=70?'var(--green)':sc>=40?'var(--yellow)':'var(--red)';
+  return (
+    <div className="dash-zella-grid">
+      <div style={{position:'relative',width:'100%',height:230}}><canvas ref={ref}/></div>
+      <div>
+        <div style={{fontSize:12,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.8px',color:'var(--text-3)',marginBottom:8}}>Zella Score</div>
+        <div style={{fontFamily:'var(--mono)',fontSize:46,fontWeight:700,lineHeight:1,color:scColor,marginBottom:12}}>{sc}<span style={{fontSize:18,color:'var(--text-3)'}}> / 100</span></div>
+        <div style={{height:8,borderRadius:4,background:'linear-gradient(90deg,#ff3d71,#ff9100,#ffd600,#69f0ae,#00e676)',position:'relative',marginBottom:14}}>
+          <div style={{position:'absolute',top:-3,left:`calc(${sc}% - 7px)`,width:14,height:14,borderRadius:'50%',background:'#fff',border:'2px solid var(--surface)',boxShadow:'0 0 6px rgba(0,0,0,0.5)'}}/>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 16px'}}>
+          {axes.map(a=>(
+            <div key={a.label} style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--mono)',fontSize:11}}>
+              <span style={{color:'var(--text-3)'}}>{a.label}</span>
+              <span style={{color:'var(--text-2)',fontWeight:700}}>{Math.round(a.value)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── DASHBOARD ───────────────────────────────────────────────────────────────
 function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, onGoToStats }) {
   const sc = parseFloat(startingCapital) || 0;
@@ -1131,6 +1319,13 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
   , [filteredTrades, flAcctIds]);
   // eqStats = funded+live only → for Total P&L, equity curve, drawdown, daily/weekly avg
   const eqStats = useMemo(()=>calcStats(flTrades, sc),[flTrades, sc]);
+
+  // Napi P&L (Zella consistency-hez) + Zella score
+  const dailyPnls = useMemo(()=>{
+    const m={}; filteredTrades.filter(t=>!t.isNoTrade).forEach(t=>{ m[t.date]=(m[t.date]||0)+(parseFloat(t.pnl)||0); });
+    return Object.values(m);
+  }, [filteredTrades]);
+  const zella = useMemo(()=>computeZella(stats, dailyPnls), [stats, dailyPnls]);
 
   if (!stats) return (
     <div className="page"><div className="empty">
@@ -1192,19 +1387,37 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
           </div>
         )}
       </div>
-      <div className="kpi-grid">
-        <div className="kpi">
-          <div className="kpi-label">Win Rate {stats.ruleBreakCount>0 && <span style={{fontSize:9,color:'var(--text-3)',fontWeight:400}}>(clean)</span>}</div>
-          <div className="kpi-value" style={{color:stats.cleanWinRate>=50?'var(--green)':'var(--red)'}}>
-            {stats.cleanWinRate.toFixed(1)}%
-          </div>
-          <div className="kpi-sub" style={{display:'flex',flexDirection:'column',gap:2}}>
-            <span>{stats.cleanWins}W / {stats.cleanLosses}L (excl. BE)</span>
-            {stats.ruleBreakCount>0 && (
-              <span style={{color:'var(--text-3)'}}>Össz: {stats.winRate.toFixed(1)}% ({stats.ruleBreakCount} RB beleszámítva)</span>
-            )}
+      {/* Tradezella-stílusú fő widgetek */}
+      <div className="dash-widgets">
+        <div className="dash-widget">
+          <div className="dw-head">Net P&L <span className="dw-badge">{stats.total}</span></div>
+          <div className="dw-bignum" style={{color:stats.totalPnL>=0?'var(--green)':'var(--red)'}}>
+            {stats.totalPnL>=0?'+':'-'}${n(Math.abs(stats.totalPnL),2)}
           </div>
         </div>
+        <div className="dash-widget">
+          <div className="dw-head">Profit factor</div>
+          <ProfitFactorDonut grossProfit={stats.grossProfit} grossLoss={stats.grossLoss} pf={stats.profitFactor}/>
+        </div>
+        <div className="dash-widget">
+          <div className="dw-head">Trade win %</div>
+          <WinRateGauge wins={stats.cleanWins} losses={stats.cleanLosses} bes={stats.bes} winRate={stats.cleanWinRate}/>
+        </div>
+        <div className="dash-widget">
+          <div className="dw-head">Avg win/loss trade</div>
+          <WinLossBar avgWin={stats.avgWin} avgLoss={stats.avgLoss}/>
+        </div>
+      </div>
+
+      {/* Zella Score – pókháló */}
+      {zella && (
+        <div className="dash-zella">
+          <ZellaRadar axes={zella.axes} score={zella.score}/>
+        </div>
+      )}
+
+      {/* Másodlagos metrikák */}
+      <div className="kpi-grid">
         <div className="kpi">
           <div className="kpi-label">Win Chance</div>
           <div className="kpi-value" style={{color:stats.winChance>=50?'var(--green)':'var(--red)'}}>
@@ -1230,11 +1443,6 @@ function Dashboard({ trades, goal, startingCapital, maxDailyLoss, maxTotalLoss, 
             {stats.streakN}× {stats.streakT==='Win'?'✓':stats.streakT==='Loss'?'✗':'–'}
           </div>
           <div className="kpi-sub">{stats.streakT||'–'} streak</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">Profit Factor</div>
-          <div className="kpi-value">{flPf}</div>
-          <div className="kpi-sub">Funded / Live</div>
         </div>
       </div>
 
@@ -2826,6 +3034,40 @@ function Statistics({ trades, startingCapital }) {
 
   const allInstruments = useMemo(()=>[...new Set(trades.filter(t=>!t.isNoTrade).map(t=>t.instrument).filter(Boolean))],[trades]);
 
+  // ── Idő- és bias-statisztikák ──────────────────────────────────────────────
+  const timeStats = useMemo(()=>{
+    const toMin = (hhmm) => { if(!hhmm||!/^\d{1,2}:\d{2}$/.test(hhmm)) return null; const [h,m]=hhmm.split(':').map(Number); return h*60+m; };
+    const fmtDur = (mins) => { if(mins==null) return '–'; const h=Math.floor(mins/60), m=Math.round(mins%60); return h>0?`${h}ó ${m}p`:`${m} perc`; };
+    const fmtClock = (mins) => { if(mins==null) return '–'; const h=Math.floor(mins/60)%24, m=Math.round(mins%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; };
+    const winDurs=[], lossDurs=[], winOpens=[];
+    let biasAligned=0, biasTotal=0;
+    const hourBuckets={};
+    real.forEach(t=>{
+      const en=toMin(t.entryTime), ex=toMin(t.exitTime);
+      let dur=null;
+      if(en!=null && ex!=null){ dur = ex-en; if(dur<0) dur+=1440; }
+      if(t.result==='Win'){ if(dur!=null) winDurs.push(dur); if(en!=null){ winOpens.push(en); const hb=Math.floor(en/60); hourBuckets[hb]=(hourBuckets[hb]||0)+1; } }
+      else if(t.result==='Loss'){ if(dur!=null) lossDurs.push(dur); }
+      // bias egyezés: csak ha van irányított bias (nem Neutral) és eldőlt a trade
+      const biasDir = t.bias<=2?'down':t.bias>=4?'up':null;
+      if(biasDir && (t.result==='Win'||t.result==='Loss')){
+        biasTotal++;
+        const market = t.result==='Win' ? (t.direction==='Long'?'up':'down') : (t.direction==='Long'?'down':'up');
+        if(market===biasDir) biasAligned++;
+      }
+    });
+    const avg = arr => arr.length? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+    let topHour=null, topCnt=0;
+    Object.entries(hourBuckets).forEach(([h,c])=>{ if(c>topCnt){topCnt=c;topHour=parseInt(h);} });
+    return {
+      avgWinDur: fmtDur(avg(winDurs)), winDurN: winDurs.length,
+      avgLossDur: fmtDur(avg(lossDurs)), lossDurN: lossDurs.length,
+      biasPct: biasTotal? (biasAligned/biasTotal*100) : null, biasAligned, biasTotal,
+      avgWinOpen: fmtClock(avg(winOpens)), winOpenN: winOpens.length,
+      topHour: topHour!=null ? `${String(topHour).padStart(2,'0')}:00–${String((topHour+1)%24).padStart(2,'0')}:00` : '–', topCnt,
+    };
+  }, [real]);
+
   if (!s && !isFiltered) return <div className="page"><div className="empty"><p>Nincs elég adat.</p></div></div>;
   const pf = s ? (s.profitFactor===Infinity?'∞':n(s.profitFactor)) : '–';
   return (
@@ -2970,6 +3212,40 @@ function Statistics({ trades, startingCapital }) {
             <tr><td>Expectancy / trade</td><td className={s.expectancy>=0?'c-green':'c-red'}>${n(s.expectancy,2)}</td></tr>
             <tr><td>Max Drawdown</td><td className="c-red">{s.maxDDpct.toFixed(1)}% · ${n(s.maxDD,2)}</td></tr>
             <tr><td>Trading napok</td><td>{s.tradingDays}</td></tr>
+          </tbody></table>
+        </div>
+
+        {/* Idő & Bias statisztikák */}
+        <div className="stat-block stat-grid-full">
+          <h3>Idő & Bias</h3>
+          <table className="stat-table"><tbody>
+            <tr>
+              <td>Átlagos nyertes pozí idő</td>
+              <td className="c-green" style={{fontWeight:700}}>{timeStats.avgWinDur}
+                <span style={{color:'var(--text-3)',fontWeight:400,fontSize:11}}> ({timeStats.winDurN})</span></td>
+            </tr>
+            <tr>
+              <td>Átlagos vesztes pozí idő</td>
+              <td className="c-red" style={{fontWeight:700}}>{timeStats.avgLossDur}
+                <span style={{color:'var(--text-3)',fontWeight:400,fontSize:11}}> ({timeStats.lossDurN})</span></td>
+            </tr>
+            <tr>
+              <td>Bias egyezés <span style={{color:'var(--text-3)',fontSize:11}}>(a piac a bias irányába ment)</span></td>
+              <td className={timeStats.biasPct==null?'':timeStats.biasPct>=50?'c-green':'c-red'} style={{fontWeight:700}}>
+                {timeStats.biasPct!=null ? `${timeStats.biasPct.toFixed(1)}%` : '–'}
+                {timeStats.biasTotal>0 && <span style={{color:'var(--text-3)',fontWeight:400,fontSize:11}}> ({timeStats.biasAligned}/{timeStats.biasTotal})</span>}
+              </td>
+            </tr>
+            <tr>
+              <td>Nyertesek átlagos nyitási ideje</td>
+              <td style={{fontWeight:700,fontFamily:'var(--mono)'}}>{timeStats.avgWinOpen}
+                <span style={{color:'var(--text-3)',fontWeight:400,fontSize:11}}> ({timeStats.winOpenN})</span></td>
+            </tr>
+            <tr>
+              <td>Nyertesek leggyakoribb sávja</td>
+              <td style={{fontWeight:700,fontFamily:'var(--mono)',color:'var(--accent)'}}>{timeStats.topHour}
+                {timeStats.topCnt>0 && <span style={{color:'var(--text-3)',fontWeight:400,fontSize:11}}> ({timeStats.topCnt}×)</span>}</td>
+            </tr>
           </tbody></table>
         </div>
 
@@ -4094,7 +4370,7 @@ function AccountEntryCard({ account, trades, onEdit, onDelete, onPayoutSaved }) 
       </div>}
 
       {/* Equity summary */}
-      <div style={{display:'grid',gridTemplateColumns:`repeat(${isFunded && p.totalPayouts > 0 ? 5 : 4},1fr)`,gap:8,marginBottom:12}}>
+      <div className="acct-stat-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${isFunded && p.totalPayouts > 0 ? 5 : 4},1fr)`,gap:8,marginBottom:12}}>
         {[
           {l:'Egyenleg',    v:`$${n(p.currentEquity,2)}`,  c:p.totalPnL>=0?'var(--green)':'var(--red)'},
           {l:'P&L',         v:pnlFmt(p.totalPnL),           c:p.totalPnL>=0?'var(--green)':'var(--red)'},
