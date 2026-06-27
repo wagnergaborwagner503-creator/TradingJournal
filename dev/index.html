@@ -3052,6 +3052,13 @@ function Statistics({ trades, startingCapital }) {
     };
   }, [real]);
 
+  // Zella score a szűrt (pl. clean) pozíciókra
+  const dailyPnls = useMemo(()=>{
+    const m={}; real.forEach(t=>{ m[t.date]=(m[t.date]||0)+(parseFloat(t.pnl)||0); });
+    return Object.values(m);
+  }, [real]);
+  const zella = useMemo(()=>computeZella(s, dailyPnls), [s, dailyPnls]);
+
   if (!s && !isFiltered) return <div className="page"><div className="empty"><p>Nincs elég adat.</p></div></div>;
   const pf = s ? (s.profitFactor===Infinity?'∞':n(s.profitFactor)) : '–';
   return (
@@ -3161,6 +3168,36 @@ function Statistics({ trades, startingCapital }) {
       </div>
 
       {!s && <div style={{textAlign:'center',padding:'24px',color:'var(--text-3)',fontFamily:'var(--mono)'}}>Nincs trade a szűrési feltételeknek megfelelően.</div>}
+
+      {/* Tradezella-stílusú widgetek + Zella Score (a szűrt nézetre) */}
+      {s && (<>
+        <div className="dash-widgets">
+          <div className="dash-widget">
+            <div className="dw-head">Net P&L <span className="dw-badge">{s.total}</span></div>
+            <div className="dw-bignum" style={{color:s.totalPnL>=0?'var(--green)':'var(--red)'}}>
+              {s.totalPnL>=0?'+':'-'}${n(Math.abs(s.totalPnL),2)}
+            </div>
+          </div>
+          <div className="dash-widget">
+            <div className="dw-head">Profit factor</div>
+            <ProfitFactorDonut grossProfit={s.grossProfit} grossLoss={s.grossLoss} pf={s.profitFactor}/>
+          </div>
+          <div className="dash-widget">
+            <div className="dw-head">Trade win %</div>
+            <WinRateGauge wins={s.cleanWins} losses={s.cleanLosses} bes={s.bes} winRate={s.cleanWinRate}/>
+          </div>
+          <div className="dash-widget">
+            <div className="dw-head">Avg win/loss trade</div>
+            <WinLossBar avgWin={s.avgWin} avgLoss={s.avgLoss}/>
+          </div>
+        </div>
+        {zella && (
+          <div className="dash-zella">
+            <ZellaRadar axes={zella.axes} score={zella.score}/>
+          </div>
+        )}
+      </>)}
+
       {s && <div className="stat-grid">
 
         {/* Sor 1: két fő összesítő blokk egymás mellett */}
