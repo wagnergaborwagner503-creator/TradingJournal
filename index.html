@@ -1236,9 +1236,32 @@ function WinLossBar({ avgWin, avgLoss }) {
   );
 }
 
-// Zella Score – pókháló (radar) + pontszám
+// Zella metrikák – magyarázat + javítási tipp (kattintásra)
+const ZELLA_INFO = {
+  'Win %': {
+    desc:'A nyertes trade-ek aránya az eldőlt (BE nélküli) pozíciókból. Magasabb = gyakrabban zársz nyereséggel.',
+    tip:'Szűkítsd a kereskedést a legjobban teljesítő setupjaidra, és kerüld a kapkodó, terven kívüli beszállásokat.' },
+  'Profit factor': {
+    desc:'A bruttó nyereség osztva a bruttó veszteséggel. 1 felett nyereséges vagy, 2+ már erős.',
+    tip:'Engedd futni a nyerőket és vágd gyorsabban a veszteseket – a nagyobb nyerők és kisebb vesztesek emelik ezt.' },
+  'Avg win/loss': {
+    desc:'Az átlagos nyereség és az átlagos veszteség aránya. 1 felett az átlag nyerőd nagyobb az átlag vesztesnél.',
+    tip:'Célozz jobb R:R-t: tartsd szorosan a stopot és adj teret a célnak. Ne zárd a nyerőt túl korán.' },
+  'Recovery factor': {
+    desc:'A nettó profit osztva a max. visszaeséssel (drawdown). Megmutatja, mennyit termelsz a kockázathoz képest.',
+    tip:'Csökkentsd a drawdownt: kisebb kockázat/trade és a vesztessorozatok megállítása növeli ezt az értéket.' },
+  'Max drawdown': {
+    desc:'A legnagyobb tőkevisszaesés a csúcshoz képest (itt 100 = nincs visszaesés). Alacsony DD = jó tőkevédelem.',
+    tip:'Használj napi veszteséglimitet és fix pozícióméretet, hogy egyetlen rossz nap se vigye el a heted.' },
+  'Consistency': {
+    desc:'Mennyire egyenletesen oszlik el a profit a nyereséges napok között. Magas = nem egy-két nap viszi a hasznot.',
+    tip:'Kerüld a túlméretezett „all-in” napokat; az egyenletes, ismételhető napi nyereség stabilabb görbét ad.' },
+};
+
+// Zella Score – pókháló (radar) + pontszám (pontra kattintva magyarázat + tipp)
 function ZellaRadar({ axes, score }) {
   const ref = useRef(null); const chart = useRef(null);
+  const [sel, setSel] = useState(null);
   useEffect(()=>{
     if (!ref.current || !axes) return;
     if (chart.current) chart.current.destroy();
@@ -1247,9 +1270,11 @@ function ZellaRadar({ axes, score }) {
       data:{ labels:axes.map(a=>a.label),
         datasets:[{ data:axes.map(a=>Math.round(a.value)),
           backgroundColor:'rgba(124,108,246,0.25)', borderColor:'rgba(124,108,246,0.9)',
-          borderWidth:2, pointBackgroundColor:'rgba(124,108,246,1)', pointRadius:3 }] },
+          borderWidth:2, pointBackgroundColor:'rgba(124,108,246,1)', pointRadius:4, pointHoverRadius:6, pointHitRadius:22 }] },
       options:{ responsive:true, maintainAspectRatio:false, animation:false,
-        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1520',borderColor:'#1a2535',borderWidth:1,bodyColor:'#dce8f5',callbacks:{label:c=>` ${c.raw}/100`}} },
+        onClick:(evt,els,ch)=>{ const pts=ch.getElementsAtEventForMode(evt,'nearest',{intersect:false},true); if(pts.length) setSel(pts[0].index); },
+        onHover:(evt,els)=>{ if(evt.native&&evt.native.target) evt.native.target.style.cursor = els.length?'pointer':'default'; },
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1520',borderColor:'#1a2535',borderWidth:1,bodyColor:'#dce8f5',callbacks:{label:c=>` ${c.raw}/100 – kattints a részletekért`}} },
         scales:{ r:{ min:0, max:100, beginAtZero:true,
           grid:{color:'rgba(255,255,255,0.08)'}, angleLines:{color:'rgba(255,255,255,0.08)'},
           pointLabels:{color:'#9fb3c8',font:{size:10,family:"'IBM Plex Mono'"}},
@@ -1259,7 +1284,12 @@ function ZellaRadar({ axes, score }) {
   }, [axes]);
   const sc = Math.round(score||0);
   const scColor = sc>=70?'var(--green)':sc>=40?'var(--yellow)':'var(--red)';
+  const selAxis = sel!=null ? axes[sel] : null;
+  const selInfo = selAxis ? ZELLA_INFO[selAxis.label] : null;
+  const selVal = selAxis ? Math.round(selAxis.value) : 0;
+  const valColor = selVal>=70?'var(--green)':selVal>=40?'var(--yellow)':'var(--red)';
   return (
+    <>
     <div className="dash-zella-grid">
       <div style={{position:'relative',width:'100%',height:230}}><canvas ref={ref}/></div>
       <div>
@@ -1268,16 +1298,41 @@ function ZellaRadar({ axes, score }) {
         <div style={{height:8,borderRadius:4,background:'linear-gradient(90deg,#ff3d71,#ff9100,#ffd600,#69f0ae,#00e676)',position:'relative',marginBottom:14}}>
           <div style={{position:'absolute',top:-3,left:`calc(${sc}% - 7px)`,width:14,height:14,borderRadius:'50%',background:'#fff',border:'2px solid var(--surface)',boxShadow:'0 0 6px rgba(0,0,0,0.5)'}}/>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 16px'}}>
-          {axes.map(a=>(
-            <div key={a.label} style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--mono)',fontSize:11}}>
-              <span style={{color:'var(--text-3)'}}>{a.label}</span>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 8px'}}>
+          {axes.map((a,i)=>(
+            <div key={a.label} onClick={()=>setSel(i)}
+              style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--mono)',fontSize:11,cursor:'pointer',
+                padding:'2px 6px',borderRadius:5,
+                background: sel===i?'rgba(124,108,246,0.18)':'transparent',
+                border: sel===i?'1px solid rgba(124,108,246,0.5)':'1px solid transparent'}}>
+              <span style={{color: sel===i?'var(--text)':'var(--text-3)'}}>{a.label}</span>
               <span style={{color:'var(--text-2)',fontWeight:700}}>{Math.round(a.value)}</span>
             </div>
           ))}
         </div>
       </div>
     </div>
+    {/* Kiválasztott metrika magyarázata + tipp */}
+    <div style={{marginTop:14,background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 14px'}}>
+      {selInfo ? (
+        <>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7,flexWrap:'wrap'}}>
+            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{selAxis.label}</span>
+            <span style={{fontFamily:'var(--mono)',fontSize:11,fontWeight:700,color:valColor,
+              background:'rgba(255,255,255,0.06)',borderRadius:5,padding:'1px 7px'}}>{selVal}/100</span>
+          </div>
+          <div style={{fontSize:12,color:'var(--text-2)',lineHeight:1.5,marginBottom:8}}>{selInfo.desc}</div>
+          <div style={{fontSize:12,color:'var(--accent)',lineHeight:1.5,display:'flex',gap:6}}>
+            <span style={{flexShrink:0}}>💡 Tipp:</span><span style={{color:'var(--text-2)'}}>{selInfo.tip}</span>
+          </div>
+        </>
+      ) : (
+        <div style={{fontSize:12,color:'var(--text-3)',fontFamily:'var(--mono)',textAlign:'center'}}>
+          Kattints a pókháló egyik pontjára (vagy egy metrikára a listából) a magyarázatért és tippért.
+        </div>
+      )}
+    </div>
+    </>
   );
 }
 
