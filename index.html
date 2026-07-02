@@ -4741,101 +4741,229 @@ function AccountEntryCard({ account, trades, onEdit, onDelete, onPayoutSaved }) 
 // kiválasztás után is szabadon felülírható minden mező.
 const PROP_PRESETS = {
   'Apex Trader Funding': {
-    sizes: {
-      '25K':  { start:25000,  target:1500,  mll:1500 },
-      '50K':  { start:50000,  target:3000,  mll:2500 },
-      '100K': { start:100000, target:6000,  mll:3000 },
-      '150K': { start:150000, target:9000,  mll:5000 },
-      '250K': { start:250000, target:15000, mll:6500 },
-      '300K': { start:300000, target:20000, mll:7500 },
+    packages: {
+      'PA': {
+        sizes: {
+          '25K':  { start:25000,  target:1500,  mll:1500 },
+          '50K':  { start:50000,  target:3000,  mll:2500 },
+          '100K': { start:100000, target:6000,  mll:3000 },
+          '150K': { start:150000, target:9000,  mll:5000 },
+          '250K': { start:250000, target:15000, mll:6500 },
+          '300K': { start:300000, target:20000, mll:7500 },
+        },
+        mdll:0, minTradingDays:7, consistencyRule:0,
+        pay:{ payMinDays:8, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:7, consistencyRule:0,
-    pay:{ payMinDays:8, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'TopStep': {
-    sizes: {
-      '50K':  { start:50000,  target:3000, mll:2000 },
-      '100K': { start:100000, target:6000, mll:3000 },
-      '150K': { start:150000, target:9000, mll:4500 },
+    packages: {
+      'Trading Combine': {
+        sizes: {
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+          '150K': { start:150000, target:9000, mll:4500 },
+        },
+        mdll:0, minTradingDays:3, consistencyRule:40,
+        pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:200, payMaxAmount:0, payConsistencyPct:40 },
+      },
     },
-    mdll:0, minTradingDays:3, consistencyRule:40,
-    pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:200, payMaxAmount:0, payConsistencyPct:40 },
   },
   'MyFundedFutures': {
-    sizes: {
-      '50K':  { start:50000,  target:3000, mll:2000 },
-      '100K': { start:100000, target:6000, mll:3000 },
-      '150K': { start:150000, target:9000, mll:4500 },
+    packages: {
+      'Starter': {
+        sizes: {
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+          '150K': { start:150000, target:9000, mll:4500 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      'Expert': {
+        sizes: {
+          '50K':  { start:50000,  target:4000,  mll:2000 },
+          '100K': { start:100000, target:8000,  mll:3000 },
+          '150K': { start:150000, target:12000, mll:4500 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'Take Profit Trader': {
-    sizes: {
-      '25K':  { start:25000,  target:1500, mll:1000 },
-      '50K':  { start:50000,  target:3000, mll:2000 },
-      '100K': { start:100000, target:6000, mll:3000 },
+    packages: {
+      'Standard (Test→PRO)': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1000 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:50,
+        pay:{ payMinDays:1, payIntervalDays:1, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      'PRO+': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1000 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:50,
+        pay:{ payMinDays:1, payIntervalDays:1, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:1, payIntervalDays:1, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'Bulenox': {
-    sizes: {
-      '25K':  { start:25000,  target:1500, mll:1250 },
-      '50K':  { start:50000,  target:3000, mll:2500 },
-      '100K': { start:100000, target:6000, mll:5000 },
+    packages: {
+      'Qualification': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1250 },
+          '50K':  { start:50000,  target:3000, mll:2500 },
+          '100K': { start:100000, target:6000, mll:5000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:30,
+        pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:100, payMaxAmount:0, payConsistencyPct:30 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:30,
-    pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:100, payMaxAmount:0, payConsistencyPct:30 },
   },
   'Elite Trader Funding': {
-    sizes: {
-      '25K':  { start:25000,  target:1500, mll:1000 },
-      '50K':  { start:50000,  target:3000, mll:2000 },
-      '100K': { start:100000, target:6000, mll:4000 },
+    packages: {
+      'Standard': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1000 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:4000 },
+        },
+        mdll:1000, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:100, payMaxAmount:0, payConsistencyPct:20 },
+      },
     },
-    mdll:1000, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:10, payIntervalDays:14, payMinAmount:100, payMaxAmount:0, payConsistencyPct:20 },
   },
   'Tradeify': {
-    sizes: {
-      '25K':  { start:25000,  target:1500, mll:1500 },
-      '50K':  { start:50000,  target:3000, mll:2000 },
-      '100K': { start:100000, target:6000, mll:3000 },
+    packages: {
+      'Growth': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1500 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+        },
+        mdll:0, minTradingDays:1, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      'Select': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1500 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      'Lightning': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1500 },
+          '50K':  { start:50000,  target:3000, mll:2000 },
+          '100K': { start:100000, target:6000, mll:3000 },
+          '150K': { start:150000, target:9000, mll:4500 },
+        },
+        mdll:0, minTradingDays:0, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'Alpha Futures': {
-    sizes: {
-      '25K':  { start:25000,  target:1500, mll:1500 },
-      '50K':  { start:50000,  target:3000, mll:2500 },
-      '100K': { start:100000, target:6000, mll:3000 },
+    packages: {
+      'Zero': {
+        sizes: {
+          '25K':  { start:25000,  target:1500, mll:1250 },
+          '50K':  { start:50000,  target:3000, mll:2500 },
+          '100K': { start:100000, target:6000, mll:5000 },
+        },
+        mdll:1000, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:40 },
+      },
+      'Advanced': {
+        sizes: {
+          '50K':  { start:50000,  target:3000, mll:2500 },
+          '100K': { start:100000, target:6000, mll:3000 },
+          '150K': { start:150000, target:9000, mll:5000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:50,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:1000, payMaxAmount:15000, payConsistencyPct:0 },
+      },
+      'Premium': {
+        sizes: {
+          '50K':  { start:50000,  target:3000, mll:2500 },
+          '100K': { start:100000, target:6000, mll:3000 },
+          '150K': { start:150000, target:9000, mll:5000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:50,
+        pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:1000, payMaxAmount:3000, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:5, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'FTMO': {
-    sizes: {
-      '10K':  { start:10000,  target:1000,  mll:1000,  mdll:500 },
-      '25K':  { start:25000,  target:2500,  mll:2500,  mdll:1250 },
-      '50K':  { start:50000,  target:5000,  mll:5000,  mdll:2500 },
-      '100K': { start:100000, target:10000, mll:10000, mdll:5000 },
-      '200K': { start:200000, target:20000, mll:20000, mdll:10000 },
+    packages: {
+      '2-Step Standard': {
+        sizes: {
+          '10K':  { start:10000,  target:1000,  mll:1000,  mdll:500 },
+          '25K':  { start:25000,  target:2500,  mll:2500,  mdll:1250 },
+          '50K':  { start:50000,  target:5000,  mll:5000,  mdll:2500 },
+          '100K': { start:100000, target:10000, mll:10000, mdll:5000 },
+          '200K': { start:200000, target:20000, mll:20000, mdll:10000 },
+        },
+        mdll:0, minTradingDays:4, consistencyRule:0,
+        pay:{ payMinDays:0, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      '1-Step': {
+        sizes: {
+          '10K':  { start:10000,  target:1000,  mll:1000,  mdll:300 },
+          '25K':  { start:25000,  target:2500,  mll:2500,  mdll:750 },
+          '50K':  { start:50000,  target:5000,  mll:5000,  mdll:1500 },
+          '100K': { start:100000, target:10000, mll:10000, mdll:3000 },
+          '200K': { start:200000, target:20000, mll:20000, mdll:6000 },
+        },
+        mdll:0, minTradingDays:4, consistencyRule:0,
+        pay:{ payMinDays:0, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      '2-Step Aggressive': {
+        sizes: {
+          '10K':  { start:10000,  target:2000,  mll:2000,  mdll:1000 },
+          '25K':  { start:25000,  target:5000,  mll:5000,  mdll:2500 },
+          '50K':  { start:50000,  target:10000, mll:10000, mdll:5000 },
+          '100K': { start:100000, target:20000, mll:20000, mdll:10000 },
+          '200K': { start:200000, target:40000, mll:40000, mdll:20000 },
+        },
+        mdll:0, minTradingDays:4, consistencyRule:0,
+        pay:{ payMinDays:0, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:4, consistencyRule:0,
-    pay:{ payMinDays:0, payIntervalDays:14, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
   'FundedNext': {
-    sizes: {
-      '15K':  { start:15000,  target:1200, mll:1500,  mdll:750 },
-      '25K':  { start:25000,  target:2000, mll:2500,  mdll:1250 },
-      '50K':  { start:50000,  target:4000, mll:5000,  mdll:2500 },
-      '100K': { start:100000, target:8000, mll:10000, mdll:5000 },
-      '200K': { start:200000, target:16000,mll:20000, mdll:10000 },
+    packages: {
+      'Stellar 2-Step': {
+        sizes: {
+          '15K':  { start:15000,  target:1200, mll:1500,  mdll:750 },
+          '25K':  { start:25000,  target:2000, mll:2500,  mdll:1250 },
+          '50K':  { start:50000,  target:4000, mll:5000,  mdll:2500 },
+          '100K': { start:100000, target:8000, mll:10000, mdll:5000 },
+          '200K': { start:200000, target:16000,mll:20000, mdll:10000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:0, payIntervalDays:15, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
+      'Express (1-Step)': {
+        sizes: {
+          '15K':  { start:15000,  target:1500,  mll:1500,  mdll:750 },
+          '25K':  { start:25000,  target:2500,  mll:2500,  mdll:1250 },
+          '50K':  { start:50000,  target:5000,  mll:5000,  mdll:2500 },
+          '100K': { start:100000, target:10000, mll:10000, mdll:5000 },
+          '200K': { start:200000, target:20000, mll:20000, mdll:10000 },
+        },
+        mdll:0, minTradingDays:5, consistencyRule:0,
+        pay:{ payMinDays:0, payIntervalDays:15, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
+      },
     },
-    mdll:0, minTradingDays:5, consistencyRule:0,
-    pay:{ payMinDays:0, payIntervalDays:15, payMinAmount:0, payMaxAmount:0, payConsistencyPct:0 },
   },
 };
 
@@ -4853,29 +4981,31 @@ function AccountEntryForm({ initial, onSave, onCancel }) {
   const isChallenge = f.type === 'challenge';
   const isLive      = f.type === 'live';
 
-  // Prop cég + csomag preset – kitölti a szabálymezőket a jelenlegi típus alapján
+  // Prop cég + csomag (plan) + méret preset – kitölti a szabálymezőket a jelenlegi típus alapján
   const [presetFirm, setPresetFirm] = useState('');
+  const [presetPkg, setPresetPkg] = useState('');
   const [presetSize, setPresetSize] = useState('');
-  const applyPreset = (firmName, sizeKey) => {
+  const applyPreset = (firmName, pkgName, sizeKey) => {
     const firm = PROP_PRESETS[firmName]; if (!firm) return;
-    const size = firm.sizes[sizeKey]; if (!size) return;
+    const pkg = firm.packages[pkgName]; if (!pkg) return;
+    const size = pkg.sizes[sizeKey]; if (!size) return;
     setF(p => {
       if (p.type === 'live') return { ...p, startCapital: String(size.start) };
       const next = { ...p,
         startCapital: String(size.start),
         targetBalance: String(size.start + size.target),
         mll: String(size.mll),
-        mdll: String(size.mdll != null ? size.mdll : (firm.mdll || 0)),
-        minTradingDays: String(firm.minTradingDays),
+        mdll: String(size.mdll != null ? size.mdll : (pkg.mdll || 0)),
+        minTradingDays: String(pkg.minTradingDays),
       };
       if (p.type === 'challenge') {
-        next.consistencyRule = String(firm.consistencyRule || 0);
+        next.consistencyRule = String(pkg.consistencyRule || 0);
       } else {
-        next.payMinDays = String(firm.pay.payMinDays);
-        next.payIntervalDays = String(firm.pay.payIntervalDays);
-        next.payMinAmount = String(firm.pay.payMinAmount);
-        next.payMaxAmount = String(firm.pay.payMaxAmount);
-        next.payConsistencyPct = String(firm.pay.payConsistencyPct);
+        next.payMinDays = String(pkg.pay.payMinDays);
+        next.payIntervalDays = String(pkg.pay.payIntervalDays);
+        next.payMinAmount = String(pkg.pay.payMinAmount);
+        next.payMaxAmount = String(pkg.pay.payMaxAmount);
+        next.payConsistencyPct = String(pkg.pay.payConsistencyPct);
       }
       return next;
     });
@@ -4931,28 +5061,35 @@ function AccountEntryForm({ initial, onSave, onCancel }) {
         </div>
       </div>
 
-      {/* Prop cég + csomag preset – automatikusan kitölti a szabálymezőket */}
+      {/* Prop cég + csomag (plan) + méret preset – automatikusan kitölti a szabálymezőket */}
       {!isLive && (
         <div className="form-group" style={{marginBottom:18}}>
           <label>Prop cég preset <span style={{fontSize:10,color:'var(--text-3)',fontWeight:400}}>(opcionális – kitölti a szabályokat, utána bármikor módosíthatod)</span></label>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>
-            <select value={presetFirm} onChange={e=>{ setPresetFirm(e.target.value); setPresetSize(''); }}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginTop:8}}>
+            <select value={presetFirm} onChange={e=>{ setPresetFirm(e.target.value); setPresetPkg(''); setPresetSize(''); }}
               style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',
                 padding:'9px 12px',color:'var(--text)',fontSize:13}}>
               <option value=''>— Válassz céget —</option>
               {Object.keys(PROP_PRESETS).map(name=><option key={name} value={name}>{name}</option>)}
             </select>
-            <select value={presetSize} disabled={!presetFirm}
-              onChange={e=>{ setPresetSize(e.target.value); applyPreset(presetFirm, e.target.value); }}
+            <select value={presetPkg} disabled={!presetFirm}
+              onChange={e=>{ setPresetPkg(e.target.value); setPresetSize(''); }}
               style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',
                 padding:'9px 12px',color:'var(--text)',fontSize:13,opacity:presetFirm?1:0.5}}>
               <option value=''>— Csomag —</option>
-              {presetFirm && Object.keys(PROP_PRESETS[presetFirm].sizes).map(sz=><option key={sz} value={sz}>{sz}</option>)}
+              {presetFirm && Object.keys(PROP_PRESETS[presetFirm].packages).map(pk=><option key={pk} value={pk}>{pk}</option>)}
+            </select>
+            <select value={presetSize} disabled={!presetPkg}
+              onChange={e=>{ setPresetSize(e.target.value); applyPreset(presetFirm, presetPkg, e.target.value); }}
+              style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',
+                padding:'9px 12px',color:'var(--text)',fontSize:13,opacity:presetPkg?1:0.5}}>
+              <option value=''>— Méret —</option>
+              {presetPkg && Object.keys(PROP_PRESETS[presetFirm].packages[presetPkg].sizes).map(sz=><option key={sz} value={sz}>{sz}</option>)}
             </select>
           </div>
           {presetSize && (
             <div style={{fontSize:10,color:'var(--text-3)',marginTop:7,lineHeight:1.45}}>
-              ✓ Kitöltve: <strong style={{color:'var(--text-2)'}}>{presetFirm} {presetSize}</strong> tipikus szabályai alapján (2026 eleji nyilvános adatok, közelítő érték).
+              ✓ Kitöltve: <strong style={{color:'var(--text-2)'}}>{presetFirm} – {presetPkg} – {presetSize}</strong> tipikus szabályai alapján (2026 eleji nyilvános adatok, közelítő érték).
               A cégek gyakran módosítják a szabályaikat – mindig vesd össze a hivatalos oldalukkal, és a mezők szabadon felülírhatók.
             </div>
           )}
